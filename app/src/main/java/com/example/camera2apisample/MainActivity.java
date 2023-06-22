@@ -51,8 +51,11 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    // Log出力用タグ
     private static final String TAG = "AndroidCamera2Api";
+    // 写真撮影ボタン
     private Button btnTake;
+    // ギャラリー画面遷移ボタン
     private Button btnGallery;
     private TextureView textureView;
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -64,15 +67,21 @@ public class MainActivity extends AppCompatActivity {
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
 
+    // カメラID
     private String cameraId;
+    // カメラデバイス
     protected CameraDevice cameraDevice;
+    // カメラキャプチャーセッション
     protected CameraCaptureSession cameraCaptureSessions;
+    // キャプチャーリクエストビルダー
     protected CaptureRequest.Builder captureRequestBuilder;
     private Size imageDimension;
     private ImageReader imageReader;
+    // 撮影画像保存処理用
     private File file;
     private File folder;
     private String folderName = "MyPhotoDir";
+
     private static final int REQUEST_CAMERA_PERMISSION = 200;
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
@@ -162,17 +171,26 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * カメラ撮影
+     *
+     */
     protected void takePicture() {
         if (cameraDevice == null) {
             Log.e(TAG, "camearaDevice is null");
             return;
         }
+        // 外部ストレージ使用許可がRWでない場合、Rのみの場合は撮影させない
         if (!isExternalStorageAvailableForRW() || isExternalStorageReadOnly()) {
             btnTake.setEnabled(false);
         }
         if (isStoragePermissionGranted()) {
+            //　外部ストレージ使用許可の場合
+
+            // カメラマネージャーを取得
             CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
             try {
+                // カメラキャラクタリスティクスを取得し、使用可能なJPEGサイズを取得
                 CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
                 Size[] jpegSizes = null;
                 if (characteristics != null) {
@@ -184,19 +202,31 @@ public class MainActivity extends AppCompatActivity {
                     width = jpegSizes[0].getWidth();
                     height = jpegSizes[0].getHeight();
                 }
+
+                // ImageReader ... カメラからの画像をキャプチャするSurfaceを持つクラス
+                // ImageReaderを取得しカメラから画像を読み取りコールバックで加工する
                 ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
+
+                // カメラから取得したSurfaceとTextureViewから取得したSurfaceを取得
                 List<Surface> outputSurfaces = new ArrayList<Surface>(2);
                 outputSurfaces.add(reader.getSurface());
                 outputSurfaces.add(new Surface(textureView.getSurfaceTexture()));
+
+                // セッションと呼ばれる要求の実行単位を作成しカメラデバイスを操作する
+                // ターゲットはカメラのsurface、リクエストはコントロールモード
                 final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                 captureBuilder.addTarget(reader.getSurface());
                 captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-                // orientation
+
+                // orientation の取得 APIレベル31以上では非推奨の方法(getDefaultDisplay().getRotation())
                 int rotation;
-                // deprecated
+                /** deprecated */
                 rotation = getWindowManager().getDefaultDisplay().getRotation();
 
+                // JPEGの方向をセット
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+
+                // 保存先ディレクト+ファイルのパスを生成(ディレクトリがなければ作成)
                 file = null;
                 folder = new File(folderName);
                 String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -205,15 +235,23 @@ public class MainActivity extends AppCompatActivity {
                 if(!folder.exists()) {
                     folder.mkdirs();
                 }
+
+                // ImageReaderのリスナーを生成
                 ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                     @Override
                     public void onImageAvailable(ImageReader imageReader) {
+                        // 画像利用可能になった
+                        // Imageはカメラ利用した際に取得できる画像形式
                         Image image = null;
                         try {
+                            // 最新の画像を取得
                             image = reader.acquireLatestImage();
+                            // ByteBufferで取得
                             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                            // byte配列に変換
                             byte[] bytes = new byte[buffer.capacity()];
                             buffer.get(bytes);
+                            // 画像を保存
                             save(bytes);
                         } catch (FileNotFoundException e) {
                             e.printStackTrace();
@@ -226,6 +264,12 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
+                    /**
+                     * 画像を外部ストレージに保存する処理
+                     * MyPhotoDir/IMG_yyyyMMdd_HHmmss.jpg の名前で保存
+                     * @param bytes
+                     * @throws IOException
+                     */
                     private void save(byte[] bytes) throws IOException {
                         OutputStream output = null;
                         try {
@@ -238,16 +282,22 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 };
+                // ImageReaderにリスナーとハンドラーを設定
                 reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
+
+                // キャプチャーコールバックリスナーを生成
                 final CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
                     @Override
                     public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
                         super.onCaptureCompleted(session, request, result);
+                        // 保存処理が成功
                         Toast.makeText(MainActivity.this, "Saved" + file, Toast.LENGTH_SHORT);
                         Log.d(TAG, "" + file);
+                        // カメラプレビュー生成
                         createCameraPreview();
                     }
                 };
+                // キャプチャセッションを生成 (Surfaceとキャプチャステートコールバックを登録)
                 cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                     @Override
                     public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
@@ -268,6 +318,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 外部ストレージがReadOnlyの権限のみか判定
+     * @return boolean
+     */
     private static boolean isExternalStorageReadOnly() {
         String extStorageState = Environment.getExternalStorageState();
         if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(extStorageState)) {
@@ -276,6 +330,10 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    /**
+     * 外部ストレージがReadWriteの権限があるか判定
+     * @return boolean
+     */
     private boolean isExternalStorageAvailableForRW() {
         String extStorageState = Environment.getExternalStorageState();
         if (extStorageState.equals(Environment.MEDIA_MOUNTED)) {
@@ -284,6 +342,11 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    /**
+     * 外部ストレージ権限が許可されているか判定
+     * 要件を満たしていて且つ許可がない場合は、設定画面に飛ばす
+     * @return boolean
+     */
     private boolean isStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -297,11 +360,17 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    /**
+     * カメラプレビューを生成
+     */
     protected void createCameraPreview() {
         try {
+            // SurfaceTextureを取得
             SurfaceTexture texture = textureView.getSurfaceTexture();
             assert texture != null;
+            // デフォルトバッファサイズを指定
             texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            // Surfaceを取得
             Surface surface = new Surface(texture);
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(surface);
@@ -326,17 +395,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * カメラオープン
+     * TextureViewが生成され使用可能になった時、またはonResume時に呼び出される
+     */
     private void openCamera() {
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         Log.e(TAG, "is camera open");
         try {
+            // リアカメラを取得
             cameraId = manager.getCameraIdList()[0];
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assert map != null;
+            // 使用できる画角サイズを取得
             imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
 
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            // カメラと外部ストレージの許可があるかをチェックする
+            // なければ設定画面にとばす
+            if (ActivityCompat.checkSelfPermission(
+                    this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(
+                            this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
                 return;
             }
@@ -347,6 +427,9 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "openCamera X");
     }
 
+    /**
+     * プレビュー更新
+     */
     protected void updatePreview() {
         if (null == cameraDevice) {
             Log.e(TAG, "updatePreview error, return");
