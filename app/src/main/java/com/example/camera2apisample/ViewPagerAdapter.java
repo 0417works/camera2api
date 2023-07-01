@@ -54,6 +54,7 @@ public class ViewPagerAdapter extends PagerAdapter {
         imageView.setImageBitmap(rotateBitmap);
 
         Objects.requireNonNull(container).addView(itemView);
+        itemView.setTag("childView" + position);
         return itemView;
     }
 

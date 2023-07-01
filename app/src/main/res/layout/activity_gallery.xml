@@ -5,6 +5,19 @@
     android:orientation="vertical">
     <androidx.viewpager.widget.ViewPager
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.8"
         android:id="@+id/viewPagerMain" />
+    <LinearLayout
+        android:layout_weight="0.2"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="50dp">
+        <Button
+            android:text="UPLOAD"
+            android:id="@+id/upload"
+            android:layout_gravity="center"
+            android:layout_width="200dp"
+            android:layout_height="match_parent"/>
+    </LinearLayout>
 </LinearLayout>
