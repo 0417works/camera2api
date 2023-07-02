@@ -1,5 +1,6 @@
 package com.example.camera2apisample;
 
+import android.app.ProgressDialog;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
@@ -33,7 +34,7 @@ public class CustomGalleryActivity extends AppCompatActivity {
         mViewPager = findViewById(R.id.viewPagerMain);
         mViewPagerAdapter = new ViewPagerAdapter(this, f);
         mViewPager.setAdapter(mViewPagerAdapter);
-        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+/*        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
                @Override
                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
                    //Log.e("CustomGalleryActivity", "onPageScrolled");
@@ -50,7 +51,7 @@ public class CustomGalleryActivity extends AppCompatActivity {
                    //Log.e("CustomGalleryActivity", "onPageScrollStateChanged");
                }
         });
-
+*/
         findViewById(R.id.upload).setOnClickListener(v -> {
 //            currentView = (View) mViewPager.getChildAt(currentPosition);
             currentView = (View) mViewPager.findViewWithTag("childView" + mViewPager.getCurrentItem());

@@ -1,8 +1,10 @@
 package com.example.camera2apisample;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -26,6 +28,7 @@ import java.util.Map;
 
 public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, Void, String> {
     private Activity mActivity;
+    ProgressDialog dialog;
 
     public PostAsyncHttpRequest(Activity activity) {
         this.mActivity = activity;
@@ -46,7 +49,39 @@ public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, 
             CookieManager cm = new CookieManager();
             CookieHandler.setDefault(cm);
 
-            connection = (HttpURLConnection) url.openConnection();
+            // POST通信開始
+            HttpURLConnection connection2 = (HttpURLConnection) url.openConnection();
+            connection2.setRequestMethod("POST");
+            connection2.setDoInput(true);    // リクエストのボディ送信を許可
+            connection2.setDoOutput(true);   // レスポンスのボディ受信を許可、GETの場合falseに設定
+            connection2.setRequestProperty("User-Agent", "Android");
+            connection2.setRequestProperty("Content-Type", "application/octet-stream");
+
+            // 画像データを投げる
+            OutputStream out = new BufferedOutputStream(connection2.getOutputStream());
+            out.write(jpg.toByteArray());
+            out.flush();
+            // 接続
+            connection2.connect();
+
+            // レスポンスコード取得
+            int responseCode = connection2.getResponseCode();
+            Log.e("POST responseCode:", "" + responseCode);
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                // サーバーからのレスポンスデータを受け取る
+                InputStream is = connection2.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                String line = "";
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                Log.e("response data=", sb.toString());
+                is.close();
+            }
+            connection2.disconnect();
+/*
+        connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(3000);
             connection.setReadTimeout(3000);
             connection.setRequestMethod("GET");
@@ -70,7 +105,10 @@ public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, 
                 for (HttpCookie cookie : cookieList) {
                     Log.e("cookie", cookie.toString());
                 }
-                String csrf = cookieList.get(0).toString();
+                String csrf = "";
+                if (cookieList != null && cookieList.size() > 1) {
+                    cookieList.get(0).toString();
+                }
 
                 // POST通信開始
                 HttpURLConnection connection2 = (HttpURLConnection) url.openConnection();
@@ -81,7 +119,10 @@ public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, 
                 connection2.setRequestProperty("Content-Type", "application/octet-stream");
 
                 // Tokenのみを取得
-                String token = csrf.substring(10);
+                String token = "";
+                if (csrf.length() > 0) {
+                    token = csrf.substring(10);
+                }
                 Log.e("Token", token);
                 // ヘッダーにCSRF Tokenをセット
                 connection2.setRequestProperty("X-CSRFToken", token);
@@ -109,6 +150,8 @@ public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, 
                 }
                 connection2.disconnect();
             }
+
+ */
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -118,8 +161,31 @@ public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, 
         return sb.toString();
     }
 
+    @Override
+    public void onPreExecute() {
+        // 開始前に呼び出される
+        dialog = new ProgressDialog(mActivity);
+        dialog.setCanceledOnTouchOutside(false); // 範囲外タップ抑制
+        dialog.setCancelable(false); // 戻るボタン抑制
+        dialog.setTitle("Connect");
+        dialog.setMessage("Please wait...");
+        dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        Handler handler = new Handler();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                dialog.show();
+            }
+        });
+    }
+
+    @Override
     public void onPostExecute(String string) {
         // 終了時に呼び出される
+        if (dialog != null) {
+            dialog.dismiss();
+            dialog = null;
+        }
         Toast.makeText(mActivity, string, Toast.LENGTH_SHORT).show();
     }
 
