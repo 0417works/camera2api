@@ -93,8 +93,18 @@ public class MainActivity extends AppCompatActivity {
         textureView = findViewById(R.id.texture);
         if (textureView != null)
             textureView.setSurfaceTextureListener(textureListener);
+        Button btnWeb = findViewById(R.id.btnWeb);
         btnTake = findViewById(R.id.btnTake);
         btnGallery = findViewById(R.id.btnGallery);
+        if (btnWeb != null) {
+            btnWeb.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(MainActivity.this, WebViewActivity.class);
+                    startActivity(intent);
+                }
+            });
+        }
         if (btnTake != null)
             btnTake.setOnClickListener(new View.OnClickListener() {
                 @Override

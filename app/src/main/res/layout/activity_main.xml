@@ -26,6 +26,15 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:id="@+id/btnWeb"
+            android:backgroundTint="#2a9df4"
+            android:text="Web Gallery"
+            android:textColor="@android:color/white"
+            android:layout_marginRight="5dp"/>
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:id="@+id/btnTake"
             android:backgroundTint="#2a9df4"
             android:text="Take a Photo"
