@@ -424,7 +424,7 @@ public class MainActivity extends AppCompatActivity {
             // カメラと外部ストレージの許可があるかをチェックする
             // なければ設定画面にとばす
             if (ActivityCompat.checkSelfPermission(
-                    this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED &&
+                    this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
                     ActivityCompat.checkSelfPermission(
                             this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
