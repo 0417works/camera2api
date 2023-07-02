@@ -46,15 +46,18 @@ public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, 
             param.bmp.compress(Bitmap.CompressFormat.JPEG, 100, jpg);
 
             URL url = new URL(param.uri);
+            /*
             CookieManager cm = new CookieManager();
             CookieHandler.setDefault(cm);
-
+            */
             // POST通信開始
             HttpURLConnection connection2 = (HttpURLConnection) url.openConnection();
             connection2.setRequestMethod("POST");
             connection2.setDoInput(true);    // リクエストのボディ送信を許可
             connection2.setDoOutput(true);   // レスポンスのボディ受信を許可、GETの場合falseに設定
-            connection2.setRequestProperty("User-Agent", "Android");
+            String userAgent = System.getProperty("http.agent");
+            Log.e("UserAgent", userAgent);
+            connection2.setRequestProperty("User-Agent", userAgent);
             connection2.setRequestProperty("Content-Type", "application/octet-stream");
 
             // 画像データを投げる
@@ -154,6 +157,7 @@ public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, 
  */
         } catch (IOException e) {
             e.printStackTrace();
+            sb.append(e.toString());
         } finally {
             if (connection!=null)
                 connection.disconnect();
@@ -170,13 +174,7 @@ public class PostAsyncHttpRequest extends AsyncTask<PostAsyncHttpRequest.Param, 
         dialog.setTitle("Connect");
         dialog.setMessage("Please wait...");
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        Handler handler = new Handler();
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                dialog.show();
-            }
-        });
+        dialog.show();
     }
 
     @Override
